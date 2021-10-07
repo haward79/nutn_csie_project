@@ -12,7 +12,7 @@ from nav_msgs.msg import OccupancyGrid
 from drone import Drone
 from fetchCam import FetchCam
 from yoloDetect import YoloDetect
-from slam import Slam
+from map import Map
 
 
 class ShareData():
@@ -79,10 +79,10 @@ yd = YoloDetect(globalData)
 Thread(target=yd.detectQueue).start()
 
 
-# Create SLAM.
-slam = Slam(globalData)
-Thread(target=slam.update).start()
+# Create map.
+map = Map(globalData)
+Thread(target=map.update).start()
 
-rospy.Subscriber('/rtabmap/proj_map', OccupancyGrid, slam.fetchMap2d)
-rospy.Subscriber('/rtabmap/localization_pose', PoseWithCovarianceStamped, slam.fetchPose)
+rospy.Subscriber('/rtabmap/proj_map', OccupancyGrid, map.fetchMap2d)
+rospy.Subscriber('/rtabmap/localization_pose', PoseWithCovarianceStamped, map.fetchPose)
 

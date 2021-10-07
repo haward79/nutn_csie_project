@@ -7,7 +7,7 @@ from drawing import drawSquare
 from textLog import logText
 
 
-class Slam():
+class Map():
 
     def __init__(self, globalData):
 
@@ -145,6 +145,7 @@ class Slam():
                 peopleLocations = []
                 detections = self.detectionsQueue.get()
 
+                # Fetch person location and save it.
                 for detection in detections:
                     if detection['name'] == 'person':
                         x = detection['bounding'][0]
@@ -177,6 +178,8 @@ class Slam():
 
                 self.peopleLocations = peopleLocations
                 self.writePeopleLocationsQueue.put(peopleLocations)
+
+                # Draw voronoi diagram.
 
                 id += 1
 
