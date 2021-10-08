@@ -16,6 +16,8 @@ class Map():
 
         self.globalData = globalData
         self.gid = globalData.getConstInitGid()
+        self.voronoiId = self.gid
+        self.decisionId = self.gid
         self.isLog = globalData.getConstIsLog()
         self.outputPath = globalData.getConstOutputPath()
         self.detectionsQueue = globalData.detectionsQueue
@@ -43,6 +45,11 @@ class Map():
     def getConstUnitBlockMeter(self) -> float:
 
         return 0.6
+
+
+    def getConstDiff(self) -> float:
+
+        return int(self.getConstUnitBlockMeter() / self.pixelToMeter)
 
 
     def swap2D(self, a, b):
@@ -205,9 +212,9 @@ class Map():
 
                         if self.isValidLocationInGlobal(location):
                             peopleLocations.append(location)
-                            logText('Person @(x = {}, y = {}) is a valid GLOBAL point.'.format(location[0], location[1]))
+                            logText('Person @(x = {}, y = {}) px is a valid GLOBAL point.'.format(location[0], location[1]))
                         else:
-                            logText('Person @(x = {}, y = {}) is NOT a valid GLOBAL point.'.format(location[0], location[1]))
+                            logText('Person @(x = {}, y = {}) px is NOT a valid GLOBAL point.'.format(location[0], location[1]))
 
                 self.peopleLocations = peopleLocations
                 self.writePeopleLocationsQueue.put(peopleLocations)
@@ -222,12 +229,18 @@ class Map():
 
     def drone_forward(self):
 
-        step = self.getConstUnitBlockMeter() / self.pixelToMeter
+        if self.globalData.isTerminated:
+            return
+
+        step = int(self.getConstUnitBlockMeter() / self.pixelToMeter)
         self.globalLocation = (self.globalLocation[0] + step, self.globalLocation[1])
         self.drone.setAction(DroneAction.FORWARD, step)
 
 
     def drone_rotateLeft(self):
+
+        if self.globalData.isTerminated:
+            return
 
         (self.mapWidth, self.mapHeight) = self.swap2D(self.mapWidth, self.mapHeight)
         
@@ -238,6 +251,9 @@ class Map():
 
     def drone_rotateRight(self):
 
+        if self.globalData.isTerminated:
+            return
+
         (self.mapWidth, self.mapHeight) = self.swap2D(self.mapWidth, self.mapHeight)
 
         self.map = np.rot90(self.map)
@@ -245,10 +261,20 @@ class Map():
         self.drone.setAction(DroneAction.ROTATE_RIGHT, 1)
 
 
+    def drone_rotateBack(self):
+
+        if self.globalData.isTerminated:
+            return
+
+        self.drone_rotateRight()
+        self.drone_rotateRight()
+
+
     def droneDo(self):
 
         # Rotate drone clockwise and try to get pose.
-        while not self.isPoseSet:
+        logText('[GOAL] Try to build SLAM')
+        while not self.globalData.isTerminated and not self.isPoseSet:
             for i in range(4):
                 self.drone_rotateRight()
 
@@ -260,14 +286,53 @@ class Map():
         self.peopleLocations = [(-42, -22), (-30, -61), (-51, -42), (-83, -64)]
         peopleLocs = self.peopleLocationsToVoronoiLocations(self.peopleLocations)
         voronoi = Voronoi(peopleLocs)
-        figure = voronoi_plot_2d(voronoi)
-        plt.savefig('voronoi.jpg')
+        voronoiVertices = voronoi.vertices
+        voronoi_plot_2d(voronoi)
+        plt.savefig(self.outputPath + '')
+        plt.savefig(self.outputPath + ('voronoi_%010d.jpg' % (self.voronoiId)))
+        self.voronoiId += 1
 
 
         # Go to target.
+        logText('[GOAL] Try to reach target')
+        while not self.globalData.isTerminated and (abs(self.globalData.getConstTargetLocation()[0] - self.globalLocation[0]) >= self.getConstDiff() or abs(self.globalData.getConstTargetLocation()[1] - self.globalLocation[1]) >= self.getConstDiff()):
+            if self.globalLocation[0] < self.globalData.getConstTargetLocation()[0] and abs(self.globalLocation[0] - self.globalData.getConstTargetLocation()[0]) >= self.getConstDiff():
+                logText('(decisionId = {}) Go FORWARD.'.format(self.decisionId))
+                steps = int(self.getConstUnitBlockMeter() / self.pixelToMeter)
+                hasObstacle = False
+
+                for step in range(1, steps+1):
+                    loc = (self.globalLocation[0] + step, self.globalLocation[1])
+                    
+                    if loc == 0:
+                        hasObstacle = True
+                        break
+
+                if hasObstacle:
+                    if self.globalLocation[1] < self.globalData.getConstTargetLocation()[1]:
+                        self.drone_rotateLeft()
+                    else:
+                        self.drone_rotateRight()
+                else:
+                    self.drone_forward()
+
+            elif self.globalLocation[0] > self.globalData.getConstTargetLocation()[0] and abs(self.globalLocation[0] - self.globalData.getConstTargetLocation()[0]) >= self.getConstDiff():
+                logText('(decisionId = {}) Go BACK.'.format(self.decisionId))
+                self.drone_rotateBack()
+            elif self.globalLocation[1] < self.globalData.getConstTargetLocation()[1] and abs(self.globalLocation[1] - self.globalData.getConstTargetLocation()[1]) > self.getConstDiff():
+                logText('(decisionId = {}) Go LEFT.'.format(self.decisionId))
+                self.drone_rotateLeft()
+            elif self.globalLocation[1] > self.globalData.getConstTargetLocation()[1] and abs(self.globalLocation[1] - self.globalData.getConstTargetLocation()[1]) > self.getConstDiff():
+                logText('(decisionId = {}) Go RIGHT.'.format(self.decisionId))
+                self.drone_rotateRight()
+            else:
+                logText('(decisionId = {}) Failed to make decision.'.format(self.decisionId))
+
+            self.decisionId += 1
+            logText('Global Location: (x = {}, y = {}) px'.format(self.globalLocation[0], self.globalLocation[1]))
 
 
         # Reach target.
-        print('Reach target. Program exit!')
+        logText('[GOAL] Reached target.')
         self.globalData.isTerminated = True
 

@@ -29,6 +29,8 @@ class ShareData():
         if not isdir(self.outputPath):
             mkdir(self.outputPath)
 
+        self.targetLocation = (43, -10)
+
         self.drone = Drone()
 
         self.colorQueue = Queue()
@@ -53,6 +55,11 @@ class ShareData():
     def getConstOutputPath(self) -> str:
 
         return self.outputPath
+
+
+    def getConstTargetLocation(self) -> str:
+
+        return self.targetLocation
 
 
     def checkTermination(self):
