@@ -8,11 +8,8 @@ class DroneAction(Enum):
 
     STOP = 0
     FORWARD = 1
-    BACKWARD = -1
-    LEFT = 2
-    RIGHT = 3
-    ROTATE_LEFT = 4
-    ROTATE_RIGHT = 5
+    ROTATE_LEFT = 2
+    ROTATE_RIGHT = 3
 
 
 class Drone():
@@ -23,12 +20,12 @@ class Drone():
         self.logAction()
 
 
-    def setAction(self, action, step: int = 1):
+    def setAction(self, action: DroneAction, step: int = 1):
 
-        if step > 0 and action >= -1 and action <= 5:
+        if step > 0:
             self.action = action
             self.logAction()
-            sleep(0.5)
+            sleep(10)
         
         self.action = DroneAction.STOP
         self.logAction()
@@ -36,5 +33,5 @@ class Drone():
 
     def logAction(self):
 
-        logText('Flying mode changed to "{}" .'.format(self.action))
+        logText('Flying action changed to {} .'.format(self.action))
 

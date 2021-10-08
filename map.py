@@ -4,6 +4,9 @@ from queue import Queue
 import numpy as np
 import cv2
 from drawing import drawSquare
+from drone import DroneAction
+from scipy.spatial import Voronoi, voronoi_plot_2d
+import matplotlib.pyplot as plt
 from textLog import logText
 
 
@@ -16,22 +19,35 @@ class Map():
         self.isLog = globalData.getConstIsLog()
         self.outputPath = globalData.getConstOutputPath()
         self.detectionsQueue = globalData.detectionsQueue
+        self.drone = globalData.drone
 
-        self.pixelToMeter = 0.5
+        self.isPoseSet = False
+        self.pixelToMeter = 0.05
         self.mapWidth = 0  # Unit: pixel
         self.mapHeight = 0  # Unit: pixel
         self.mapOrigin = (0, 0)  # Unit: pixel
         self.globalLocation = (0, 0)  # Unit: pixel
-        self.orientation = 0  # Clock wise (0, 1, 2, 3)
         self.map = np.zeros((1, 1, 1), np.uint8)
         self.writeMapQueue = Queue()
 
         self.peopleLocations = []  # Unit: global coord
         self.writePeopleLocationsQueue = Queue()
 
+        Thread(target=self.droneDo).start()
+
         if self.isLog:
             Thread(target=self.writeMap).start()
             Thread(target=self.writePeopleLocation).start()
+
+
+    def getConstUnitBlockMeter(self) -> float:
+
+        return 0.6
+
+
+    def swap2D(self, a, b):
+
+        return (b, a)
 
 
     def isValidLocationInMap(self, location: tuple) -> bool:
@@ -59,6 +75,28 @@ class Map():
         mapCoordY = self.mapOrigin[1] - globalCoord[1]
 
         return (mapCoordX, mapCoordY)
+
+
+    def tupleLocationsToListLocations(self, locations: tuple):
+
+        result = []
+
+        for location in locations:
+            loc = [location[0], location[1]]
+            result.append(loc)
+
+        return result
+
+
+    def peopleLocationsToVoronoiLocations(self, peopleLocations: list):
+
+        voronoiLocations = []
+
+        for location in peopleLocations:
+            (locX, locY) = self.globalCoordToMapCoord((location[0], location[1]))
+            voronoiLocations.append([locX, locY])
+
+        return voronoiLocations
 
 
     def writeMap(self):
@@ -132,6 +170,8 @@ class Map():
         # data.pose.pose.position.x
         # data.pose.pose.position.y
 
+        self.isPoseSet = True
+
         self.globalLocation = (int(data.pose.pose.position.x / self.pixelToMeter), int(data.pose.pose.position.y / self.pixelToMeter))
         logText('Global Location: (x = {}, y = {}) px'.format(self.globalLocation[0], self.globalLocation[1]))
 
@@ -161,14 +201,7 @@ class Map():
                         pl_depth_pixel = int(pl_depth_meter / self.pixelToMeter)
                         currentLocation = self.globalLocation
 
-                        if self.orientation == 0:
-                            location = (currentLocation[0] + pl_depth_pixel, currentLocation[1])
-                        elif self.orientation == 1:
-                            location = (currentLocation[0], currentLocation[1] - pl_depth_pixel)
-                        elif self.orientation == 2:
-                            location = (currentLocation[0] - pl_depth_pixel, currentLocation[1])
-                        else:
-                            location = (currentLocation[0], currentLocation[1] + pl_depth_pixel)
+                        location = (currentLocation[0] + pl_depth_pixel, currentLocation[1])
 
                         if self.isValidLocationInGlobal(location):
                             peopleLocations.append(location)
@@ -179,7 +212,62 @@ class Map():
                 self.peopleLocations = peopleLocations
                 self.writePeopleLocationsQueue.put(peopleLocations)
 
-                # Draw voronoi diagram.
-
                 id += 1
+
+
+    def drone_stop(self):
+
+        self.drone.setAction(DroneAction.STOP)
+
+
+    def drone_forward(self):
+
+        step = self.getConstUnitBlockMeter() / self.pixelToMeter
+        self.globalLocation = (self.globalLocation[0] + step, self.globalLocation[1])
+        self.drone.setAction(DroneAction.FORWARD, step)
+
+
+    def drone_rotateLeft(self):
+
+        (self.mapWidth, self.mapHeight) = self.swap2D(self.mapWidth, self.mapHeight)
+        
+        self.map = np.rot90(self.map, 3)
+        self.mapOrigin = (self.mapOrigin[1], self.mapWidth - self.mapOrigin[0])
+        self.drone.setAction(DroneAction.ROTATE_LEFT, 1)
+
+
+    def drone_rotateRight(self):
+
+        (self.mapWidth, self.mapHeight) = self.swap2D(self.mapWidth, self.mapHeight)
+
+        self.map = np.rot90(self.map)
+        self.mapOrigin = (self.mapHeight - self.mapOrigin[1], self.mapOrigin[0])
+        self.drone.setAction(DroneAction.ROTATE_RIGHT, 1)
+
+
+    def droneDo(self):
+
+        # Rotate drone clockwise and try to get pose.
+        while not self.isPoseSet:
+            for i in range(4):
+                self.drone_rotateRight()
+
+            for i in range(4):
+                self.drone_rotateLeft()
+
+
+        # Draw voronoi diagram.
+        self.peopleLocations = [(-42, -22), (-30, -61), (-51, -42), (-83, -64)]
+        peopleLocs = self.peopleLocationsToVoronoiLocations(self.peopleLocations)
+        voronoi = Voronoi(peopleLocs)
+        figure = voronoi_plot_2d(voronoi)
+        plt.savefig('voronoi.jpg')
+
+
+        # Go to target.
+
+
+        # Reach target.
+        print('Reach target. Program exit!')
+        self.globalData.isTerminated = True
 
