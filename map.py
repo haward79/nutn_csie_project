@@ -303,7 +303,7 @@ class Map():
 
     def droneDo(self):
 
-        self.communication.receiveData('Press ENTER to start the drone .....')
+        self.communication.receiveData('Press ENTER to start the mission .....')
 
         # Rotate drone clockwise and try to get pose.
         logText('[GOAL] Try to build SLAM')
@@ -349,6 +349,22 @@ class Map():
                 logText('Target is at ({}, {}) px.'.format(self.globalData.targetLocation[0], self.globalData.targetLocation[1]))
 
         else:  # Go to target.
+            while self.globalData.getConstTargetLocation() == (0, 0):
+                location = self.communication.receiveData('\nPlease input target location(relative to origin): ')
+                location = location.replace(' ', '')
+                location = location.split(',')
+
+                if len(location) == 2:
+                    try:
+                        location[0] = int(location[0])
+                        location[1] = int(location[1])
+                    except:
+                        self.communication.sendData('Invalid location format. Please input "x, y" format.\n')
+                    else:
+                        self.globalData.targetLocation = (location[0], location[1])
+                else:
+                    self.communication.sendData('Invalid location format. Please input "x, y" format.\n')
+
             logText('[GOAL] Try to reach target')
             logText('Target is at ({}, {}) px.'.format(self.globalData.targetLocation[0], self.globalData.targetLocation[1]))
             while not self.globalData.isTerminated and not self.isGlobalLocationAt(self.globalData.getConstTargetLocation()):

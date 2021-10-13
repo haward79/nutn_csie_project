@@ -31,7 +31,7 @@ class ShareData():
         if not isdir(self.outputPath):
             mkdir(self.outputPath)
 
-        self.targetLocation = (25, -13)
+        self.targetLocation = (0, 0)
 
         self.colorQueue = Queue()
         self.depthQueue = Queue()
@@ -81,6 +81,7 @@ class ShareData():
                 self.isTerminated = True
 
         logText('Termination signal is DETECTED.')
+        self.communication.sendData('\nTermination signal is DETECTED.\nPress ENTER to exit\n')
 
 
 globalData = ShareData()
