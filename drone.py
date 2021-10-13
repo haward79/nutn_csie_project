@@ -14,8 +14,9 @@ class DroneAction(Enum):
 
 class Drone():
 
-    def __init__(self) -> None:
+    def __init__(self, globalData) -> None:
         
+        self.globalData = globalData
         self.action = DroneAction.STOP
         self.logAction()
 
@@ -25,10 +26,8 @@ class Drone():
         if step > 0:
             self.action = action
             self.logAction()
-            sleep(10)
-        
-        self.action = DroneAction.STOP
-        self.logAction()
+            
+            self.globalData.communication.receiveData('\nFlying action changed to {} .'.format(self.action) + '\nPress ENTER after action is done ......')
 
 
     def logAction(self):

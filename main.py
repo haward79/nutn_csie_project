@@ -9,10 +9,12 @@ import rospy
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
+from communication import Communication
 from drone import Drone
 from fetchCam import FetchCam
 from yoloDetect import YoloDetect
 from map import Map
+from textLog import logText
 
 
 class ShareData():
@@ -29,17 +31,22 @@ class ShareData():
         if not isdir(self.outputPath):
             mkdir(self.outputPath)
 
-        self.targetLocation = (43, -10)
-
-        self.drone = Drone()
+        self.targetLocation = (25, -13)
 
         self.colorQueue = Queue()
         self.depthQueue = Queue()
         self.detectionsQueue = Queue()
 
         self.isTerminated = False
+        self.isGuidedMode = False
 
         Thread(target=self.checkTermination).start()
+
+        # Start communicator.
+        self.communication = Communication(self)
+
+        # Control drone.
+        self.drone = Drone(self)
 
 
     def getConstInitGid(self) -> int:
@@ -62,13 +69,18 @@ class ShareData():
         return self.targetLocation
 
 
+    def getConstIsGuidedMode(self) -> bool:
+
+        return self.isGuidedMode
+
+
     def checkTermination(self):
 
         while not self.isTerminated:
             if not isfile('/home/user/Workspace/project/.isTerminated_False'):
                 self.isTerminated = True
 
-        print('Termination signal is DETECTED.')
+        logText('Termination signal is DETECTED.')
 
 
 globalData = ShareData()
