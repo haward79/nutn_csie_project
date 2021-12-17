@@ -7,6 +7,7 @@ class SoundType():
 
     PIANO_C = 'sound/pianoC.mp3'
     BEEP = 'sound/beep.wav'
+    BEEP_SHORT = 'sound/beep_short.wav'
 
     def __init__(self):
 

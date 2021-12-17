@@ -5,6 +5,7 @@ from time import sleep
 from datetime import datetime
 from numpy import uint8
 import dronekit
+from Sound import playSound, SoundType
 
 class AttitudeType():
 
@@ -190,6 +191,8 @@ class Copter():
     def arm(self) -> None:
 
         if self.__vehicle != None:
+            self.changeFlightMode('STABILIZE')
+
             self.log('Checking isArmable flag ......')
             while not self.get_status('isArmable'):
                 sleep(0.5)
@@ -298,6 +301,40 @@ class Copter():
 
 
     def land(self) -> None:
+
+        if self.__vehicle != None:
+            self.log('Run landing procedure ......')
+
+            if self.__vehicle.armed:
+                self.changeFlightMode('GUIDED_NOGPS')
+
+                while True:
+                    currentAlt = self.get_relativeAlt()
+                    self.log('Current altitude is %.2f m' % (currentAlt))
+
+                    # Landed.
+                    if abs(currentAlt) < 0.05:
+                        break
+
+                    # Keep going down.
+                    else:
+                        self.set_attitude(AttitudeType.STOP, 0.5, 0.4)
+
+                #self.set_attitude(AttitudeType.BACKWARD, 0.1, 0.1)
+                self.set_attitude(AttitudeType.STOP, 0.1, 0)
+                self.disarm()
+                self.log('Copter landed.')
+
+                self.changeFlightMode('STABILIZE')
+
+            else:
+                self.log('Landed due to copter not armed.')
+            
+        else:
+            self.__log_notConnected()
+
+
+    def land_useMode(self) -> None:
 
         self.changeFlightMode('LAND')
         self.log('Landing ......')
