@@ -5,7 +5,6 @@ from time import sleep
 from datetime import datetime
 from numpy import uint8
 import dronekit
-from Sound import playSound, SoundType
 
 class AttitudeType():
 
