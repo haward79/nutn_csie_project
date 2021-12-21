@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ -f '/home/user/Workspace/project/text.log' ]]
+then
+	echo '' > '/home/user/Workspace/project/text.log'
+else
+	echo 'Log file does NOT exist !'
+fi
+
+

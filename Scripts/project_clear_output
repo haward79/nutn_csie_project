@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [[ -d '/home/user/Workspace/project/output' ]]
+then
+	cd '/home/user/Workspace/project/output'
+
+	if [[ $? -eq 0 ]]
+	then
+		sudo rm -r *
+	else
+		echo 'Failed to change working directory to'
+		echo '  "/home/user/Workspace/project/output"'
+	fi
+else
+	echo 'Project output directory does NOT exist !'
+fi
+
+

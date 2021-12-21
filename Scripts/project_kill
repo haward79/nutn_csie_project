@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ -f '/home/user/Workspace/project/.isTerminated_False' ]]
+then
+	rm '/home/user/Workspace/project/.isTerminated_False'
+	echo 'Kill signal SENT !'
+else
+	echo 'FAILED to sent kill signal !'
+fi
+
+killall rosmaster
+
+

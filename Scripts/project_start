@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ -f '/home/user/Scripts/slam_start' && -f '/home/user/Workspace/project/main.py' ]]
+then
+	touch '/home/user/Workspace/project/.isTerminated_False'
+
+	/home/user/Scripts/slam_start &
+
+	cd '/home/user/Workspace/project'
+	python3 main.py &
+else
+	echo 'Failed to locate "/home/user/Scripts/slam_start"'
+	echo '              or "/home/user/Workspace/project/main.py"'
+fi
+
+

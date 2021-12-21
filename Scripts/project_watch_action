@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd '/home/user/Workspace/project'
+watch -n 1 'cat text.log | grep action | tail -n 20'
+
+
