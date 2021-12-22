@@ -8,6 +8,9 @@ class LightColor():
     GREEN = 1
     BLUE = 2
     GREEN_BLUE = 3
+    BLUE_GREEN = 3
+    PINK = 4
+    YELLOW = 5
 
     def __init__(self):
 
@@ -68,9 +71,17 @@ class Light():
         elif color == LightColor.BLUE:
             pins.append(self.BLUE_PIN)
 
-        elif color == LightColor.GREEN_BLUE:
+        elif color == LightColor.GREEN_BLUE or color == LightColor.BLUE_GREEN:
             pins.append(self.GREEN_PIN)
             pins.append(self.BLUE_PIN)
+
+        elif color == LightColor.PINK:
+            pins.append(self.RED_PIN)
+            pins.append(self.BLUE_PIN)
+
+        elif color == LightColor.YELLOW:
+            pins.append(self.RED_PIN)
+            pins.append(self.GREEN_PIN)
 
         self.__illuminate(pins, duration)
 

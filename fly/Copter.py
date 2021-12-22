@@ -449,6 +449,7 @@ class Copter():
     def set_attitude(self, attitude: AttitudeType, duration: float, throttle: float = None) -> None:
 
         THROTTLE = 0.5
+        ANGLE_DIFF = 5
 
         if throttle == None or (throttle < 0 or throttle > 1):
             throttle = THROTTLE
@@ -457,22 +458,22 @@ class Copter():
             if self.__vehicle != None:
                 if self.__vehicle.armed:
                     if attitude == AttitudeType.FORWARD:
-                        self.__set_attitude_loop(0, -5, 0, throttle, duration)
+                        self.__set_attitude_loop(0, -ANGLE_DIFF, 0, throttle, duration)
 
                     elif attitude == AttitudeType.BACKWARD:
-                        self.__set_attitude_loop(0, 5, 0, throttle, duration)
+                        self.__set_attitude_loop(0, ANGLE_DIFF, 0, throttle, duration)
                     
                     elif attitude == AttitudeType.LEFT:
-                        pass
+                        self.__set_attitude_loop(-ANGLE_DIFF, 0, 0, throttle, duration)
 
                     elif attitude == AttitudeType.RIGHT:
-                        pass
+                        self.__set_attitude_loop(ANGLE_DIFF, 0, 0, throttle, duration)
 
                     elif attitude == AttitudeType.ROTATE_LEFT:
-                        pass
+                        self.__set_attitude_loop(0, 0, ANGLE_DIFF, throttle, duration)
 
                     elif attitude == AttitudeType.ROTATE_RIGHT:
-                        pass
+                        self.__set_attitude_loop(0, 0, ANGLE_DIFF, throttle, duration)
 
                     else:
                         self.__set_attitude_loop(0, 0, 0, throttle, duration)
